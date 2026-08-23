@@ -1,0 +1,13 @@
+{
+  "name": "iracing-season-planner-builder",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CI builder: pulls iRacing schedules + catalogs, merges owned content, emits docs/data.json",
+  "scripts": {
+    "build": "node index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

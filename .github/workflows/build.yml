@@ -1,0 +1,51 @@
+name: Build season data
+
+on:
+  workflow_dispatch: {}          # run manually from the Actions tab
+  schedule:
+    - cron: '15 13 * * 2'        # Tuesdays 13:15 UTC — after the new race week rolls over
+  push:
+    branches: [main]
+    paths:
+      - 'builder/**'             # rebuild when the builder changes
+      - 'data/SeasonSchedule.pdf'
+
+permissions:
+  contents: write                # allow committing the generated JSON back
+
+concurrency:
+  group: build-season-data
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build docs/data.json
+        env:
+          IRACING_EMAIL: ${{ secrets.IRACING_EMAIL }}
+          IRACING_PASSWORD: ${{ secrets.IRACING_PASSWORD }}
+          # Optional — set these to use the official OAuth password-limited flow
+          # instead of the legacy /auth fallback (requires a client registered
+          # with iRacing; see README).
+          IRACING_CLIENT_ID: ${{ secrets.IRACING_CLIENT_ID }}
+          IRACING_CLIENT_SECRET: ${{ secrets.IRACING_CLIENT_SECRET }}
+        run: node builder/index.js
+
+      - name: Commit generated data if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: rebuild season data [skip ci]"
+            git push
+          fi

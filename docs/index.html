@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>iRacing Season Planner</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="wrap">
+        <div class="titlerow">
+          <h1>iRacing Season Planner</h1>
+          <a class="pickerlink" href="./content-picker.html">Set my content →</a>
+        </div>
+        <p class="sub" id="meta">Loading…</p>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="controls" id="controls" hidden>
+        <div class="filters">
+          <input type="search" id="search" placeholder="Search series or track…" aria-label="Search" />
+          <select id="category" aria-label="Category">
+            <option value="">All categories</option>
+          </select>
+          <label class="chk"><input type="checkbox" id="ownedOnly" checked /> Available only</label>
+          <label class="chk"><input type="checkbox" id="fixedOnly" /> Fixed only</label>
+          <label class="chk"><input type="checkbox" id="openOnly" /> Open only</label>
+          <label class="chk"><input type="checkbox" id="licenseOnly" /> License-eligible</label>
+        </div>
+      </section>
+
+      <p id="status" class="status"></p>
+      <div id="accordion" class="accordion"></div>
+    </main>
+
+    <footer class="wrap foot">
+      <p>
+        Availability = you own the week's track <strong>and</strong> at least one of the series' cars.
+        Free-with-subscription content counts as owned. Your owned content is stored in this browser only.
+        The schedule is built by GitHub Actions from your iRacing account and served statically — no login
+        happens in this page.
+      </p>
+    </footer>
+
+    <script src="./owned.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

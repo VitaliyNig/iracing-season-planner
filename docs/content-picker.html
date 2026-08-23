@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Set My Content</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .picker { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 16px 0 60px; }
+      @media (max-width: 720px) { .picker { grid-template-columns: 1fr; } }
+      .col h2 { font-size: 1rem; margin: 0 0 8px; }
+      .list { border: 1px solid var(--line); border-radius: 10px; background: var(--card); max-height: 62vh; overflow-y: auto; }
+      .item { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--line); font-size: 0.88rem; cursor: pointer; }
+      .item:last-child { border-bottom: 0; }
+      .item.free { color: var(--muted); cursor: default; }
+      .free-tag { font-size: 0.7rem; background: var(--chip); padding: 1px 6px; border-radius: 999px; margin-left: auto; }
+      .bar { position: sticky; top: 0; background: var(--bg); padding: 12px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; z-index: 2; }
+      .search2 { border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 8px; padding: 7px 10px; flex: 1 1 200px; }
+      .saved { color: var(--ok); font-size: 0.85rem; }
+    </style>
+  </head>
+  <body>
+    <header class="topbar"><div class="wrap">
+      <div class="titlerow">
+        <h1>Set My Content</h1>
+        <a class="pickerlink" href="./index.html">← Back to planner</a>
+      </div>
+      <p class="sub">Tick the paid cars &amp; tracks you own. Saved instantly in this browser — no rebuild needed.
+        Free-with-subscription items are always included and shown greyed out.</p>
+    </div></header>
+
+    <main class="wrap">
+      <div class="bar">
+        <input class="search2" id="filter" type="search" placeholder="Filter…" />
+        <span class="saved" id="saved"></span>
+      </div>
+      <div class="picker">
+        <div class="col"><h2>Cars (<span id="carOwned">0</span> owned / <span id="carCount">0</span>)</h2><div class="list" id="cars"></div></div>
+        <div class="col"><h2>Tracks (<span id="trackOwned">0</span> owned / <span id="trackCount">0</span>)</h2><div class="list" id="tracks"></div></div>
+      </div>
+    </main>
+
+    <script src="./owned.js"></script>
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      async function boot() {
+        let data;
+        try {
+          const res = await fetch('./data.json', { cache: 'no-cache' });
+          data = await res.json();
+        } catch {
+          $('cars').innerHTML = '<p class="item">data.json not built yet — run the CI build once.</p>';
+          return;
+        }
+        const cat = data.catalog || { cars: [], tracks: [] };
+        if (!cat.cars.length && !cat.tracks.length) {
+          $('cars').innerHTML = '<p class="item">Catalog empty (PDF fallback build). Run the API build to populate.</p>';
+          return;
+        }
+        renderList('cars', cat.cars);
+        renderList('tracks', cat.tracks);
+        $('carCount').textContent = cat.cars.length;
+        $('trackCount').textContent = cat.tracks.length;
+        updateCounts();
+        $('filter').addEventListener('input', applyFilter);
+      }
+
+      function renderList(kind, items) {
+        const owned = window.Owned.set(kind);
+        const box = $(kind);
+        box.innerHTML = '';
+        for (const it of items) {
+          const row = document.createElement('label');
+          row.className = 'item' + (it.free ? ' free' : '');
+          row.dataset.name = it.name.toLowerCase();
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = it.free || owned.has(it.packageId);
+          cb.disabled = it.free;
+          if (!it.free) {
+            cb.addEventListener('change', () => {
+              window.Owned.toggle(kind, it.packageId, cb.checked);
+              updateCounts();
+              flashSaved();
+            });
+          }
+          row.appendChild(cb);
+          const span = document.createElement('span');
+          span.textContent = it.name;
+          row.appendChild(span);
+          if (it.free) {
+            const tag = document.createElement('span');
+            tag.className = 'free-tag';
+            tag.textContent = 'free';
+            row.appendChild(tag);
+          }
+          box.appendChild(row);
+        }
+      }
+
+      function updateCounts() {
+        $('carOwned').textContent = window.Owned.count('cars');
+        $('trackOwned').textContent = window.Owned.count('tracks');
+      }
+      let savedTimer;
+      function flashSaved() {
+        $('saved').textContent = 'Saved ✓';
+        clearTimeout(savedTimer);
+        savedTimer = setTimeout(() => ($('saved').textContent = ''), 1200);
+      }
+      function applyFilter() {
+        const q = $('filter').value.toLowerCase();
+        document.querySelectorAll('.item').forEach((el) => {
+          el.style.display = el.dataset.name?.includes(q) ? '' : 'none';
+        });
+      }
+
+      boot();
+    </script>
+  </body>
+</html>
